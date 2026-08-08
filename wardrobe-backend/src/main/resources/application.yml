@@ -1,0 +1,109 @@
+server:
+  port: 8080
+  undertow:
+    threads:
+      io: 8
+      worker: 64
+    buffer-size: 1024
+    direct-buffers: true
+
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://localhost:3307/wardrobe?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    username: root
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      initial-size: 50
+      max-active: 100
+      max-wait: 60000
+      stat:
+        slow-sql-millis: 500
+        log-slow-sql: true
+        merge-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6380
+      password: ${SPRING_REDIS_PASSWORD:}
+      database: 0
+      timeout: 5s
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+          max-wait: 3s
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 30m
+      cache-null-values: false
+
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY:sk-demo-key-123456}
+      base-url: http://localhost:3000
+    pgvector:
+      store:
+        collection-name: clothes_embedding
+        vector-dimensions: 1536
+        url: jdbc:postgresql://localhost:5432/wardrobe_vec
+        username: postgres
+        password: ${SPRING_PGVECTOR_PASSWORD:123456}
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: ${SPRING_RABBITMQ_PASSWORD:123456}
+    virtual-host: /
+    connection-timeout: 10000
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 1
+        max-concurrency: 5
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2.0
+          max-interval: 10000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    sql-injector: com.baomidou.mybatisplus.core.injector.DefaultSqlInjector
+  global-config:
+    db-config:
+      id-type: auto
+    sql-parser-cache: true
+
+sa-token:
+  token-name: token
+  timeout: 3600
+  active-timeout: 1800
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: true
+  is-auto-renew: true
+  renew-time: 300
+  csrf:
+    is-open: true
+    check-methods: POST,DELETE,PUT,PATCH
+    allow-domains: localhost:7076,localhost:7077,localhost:7087
+    is-check-token: true
+
+logging:
+  pattern:
+    correlation: "[traceId=%X{traceId}] "
+  level:
+    druid.sql.Statement: warn

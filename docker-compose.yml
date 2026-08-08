@@ -1,0 +1,267 @@
+# =============================================================================
+# wardrobe 全栈 docker-compose.yml
+#   用法：
+#     cd d:\WebProject\wardrobe
+#     docker compose up -d --build      # 首次构建+启动
+#     docker compose down               # 停止并清理容器 (保留数据卷)
+#     docker compose down -v            # 停止+清理+删除数据库/Redis数据 (慎用)
+#
+#   启动后访问:
+#     用户端前端:  http://localhost:7070
+#     管理端前端:  http://localhost:7087
+#     后端接口:   http://localhost:8081/clothes (Docker部署; IDEA本地开发用8080)
+#     MySQL:      localhost:3307 (root / 123456，容器内仍是 3306)
+#     Redis:      localhost:6380 (无密码，容器内仍是 6379)
+# =============================================================================
+
+services:
+
+  # ------------------------------ MySQL 8.0 -----------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: wardrobe-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: "wardrobe"
+      TZ: "Asia/Shanghai"
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --init-connect=SET NAMES utf8mb4
+      - --skip-name-resolve
+    ports:
+      - "3307:3306"
+    volumes:
+      - wardrobe-mysql-data:/var/lib/mysql
+      # SQL 仅挂容器内 /tmp，不走 entrypoint initdb.d（避免临时 server POSIX 字符集导致中文变 ???）
+      # 启动后手动执行:
+      #   docker exec -i wardrobe-mysql mysql --default-character-set=utf8mb4 -uroot -p123456 wardrobe < ./wardrobe.sql
+      - ./wardrobe.sql:/tmp/wardrobe-content.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD:-123456} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ Redis 7 -------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: wardrobe-redis
+    restart: unless-stopped
+    environment:
+      TZ: "Asia/Shanghai"
+    command:
+      - redis-server
+      - --appendonly yes
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+    ports:
+      - "6380:6379"
+    volumes:
+      - wardrobe-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ PostgreSQL + pgvector ----------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: wardrobe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      POSTGRES_DB: "wardrobe_vec"
+      TZ: "Asia/Shanghai"
+    # pgvector 镜像已预装 pgvector 扩展，不需要额外配置 shared_preload_libraries
+    ports:
+      - "5432:5432"
+    volumes:
+      - wardrobe-postgres-data:/var/lib/postgresql/data
+      - ./mock-embedding/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wardrobe_vec"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ RabbitMQ 3-management ---------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: wardrobe-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: "admin"
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-123456}
+      RABBITMQ_DEFAULT_VHOST: "/"
+      TZ: "Asia/Shanghai"
+    ports:
+      - "5672:5672"      # AMQP 端口
+      - "15672:15672"   # 管理后台端口
+    volumes:
+      - wardrobe-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ Prometheus ---------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: wardrobe-prometheus
+    restart: unless-stopped
+    environment:
+      TZ: "Asia/Shanghai"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts:/etc/prometheus/alerts:ro
+      - wardrobe-prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ Grafana ------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wardrobe-grafana
+    restart: unless-stopped
+    environment:
+      TZ: "Asia/Shanghai"
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-123456}
+    ports:
+      - "3001:3000"
+    volumes:
+      - wardrobe-grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      prometheus: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ Mock Embedding Service --------------------
+  mock-embedding:
+    build:
+      context: ./mock-embedding
+      dockerfile: Dockerfile
+    container_name: wardrobe-mock-embedding
+    restart: unless-stopped
+    environment:
+      TZ: "Asia/Shanghai"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ 后端 wardrobe-backend ----------------------
+  wardrobe-backend:
+    build:
+      context: ./wardrobe-backend
+      dockerfile: Dockerfile
+    container_name: wardrobe-backend
+    restart: unless-stopped
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+      mock-embedding: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8081:8080"
+    volumes:
+      - wardrobe-images:/app/images     # 与 WebMvcConfig 中 /app/images 保持一致
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/clothes >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ 用户端前端 wardrobe-front-user -------------
+  wardrobe-front-user:
+    build:
+      context: ./wardrobe-front-user
+      dockerfile: Dockerfile
+    container_name: wardrobe-front-user
+    restart: unless-stopped
+    depends_on:
+      wardrobe-backend:
+        condition: service_healthy
+    ports:
+      - "7070:80"
+    networks:
+      - wardrobe-net
+
+  # ------------------------------ 管理端前端 wardrobe-front-admin ------------
+  wardrobe-front-admin:
+    build:
+      context: ./wardrobe-front-admin
+      dockerfile: Dockerfile
+    container_name: wardrobe-front-admin
+    restart: unless-stopped
+    depends_on:
+      wardrobe-backend:
+        condition: service_healthy
+    ports:
+      - "7087:80"
+    networks:
+      - wardrobe-net
+
+# ================================= 数据卷 ====================================
+volumes:
+  wardrobe-mysql-data:
+  wardrobe-redis-data:
+  wardrobe-postgres-data:
+  wardrobe-images:        # 后端上传/静态图片，持久化到独立卷
+  wardrobe-rabbitmq-data:
+  wardrobe-prometheus-data:
+  wardrobe-grafana-data:
+
+# ================================= 网络 ======================================
+networks:
+  wardrobe-net:
+    driver: bridge

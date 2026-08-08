@@ -1,0 +1,108 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  undertow:
+    threads:
+      io: 4
+      worker: 32
+    buffer-size: 1024
+    direct-buffers: true
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://mysql:3306/wardrobe?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      initial-size: 10
+      max-active: 40
+      min-idle: 5
+      max-wait: 60000
+      stat:
+        slow-sql-millis: ${SPRING_DATASOURCE_DRUID_SLOW_SQL_MILLIS:1000}
+        log-slow-sql: ${SPRING_DATASOURCE_DRUID_LOG_SLOW_SQL:true}
+        merge-sql: true
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ${SPRING_REDIS_PASSWORD:}
+      database: 0
+      timeout: 5s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3s
+  cache:
+    type: redis
+    redis:
+      time-to-live: 30m
+      cache-null-values: false
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY:sk-demo-key-123456}
+      base-url: http://mock-embedding:3000
+    pgvector:
+      store:
+        collection-name: clothes_embedding
+        vector-dimensions: 1536
+        url: jdbc:postgresql://postgres:5432/wardrobe_vec
+        username: postgres
+        password: ${SPRING_PGVECTOR_PASSWORD:123456}
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: admin
+    password: ${SPRING_RABBITMQ_PASSWORD:123456}
+    virtual-host: /
+    connection-timeout: 10000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+sa-token:
+  token-name: token
+  timeout: 7200
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: false
+
+wardrobe:
+  upload:
+    dir: /app/images
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  metrics:
+    tags:
+      application: wardrobe-backend
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      context:
+        include: true
+  level:
+    druid.sql.Statement: warn

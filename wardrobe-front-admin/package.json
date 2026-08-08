@@ -1,0 +1,28 @@
+{
+  "name": "wardrobe-front-admin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "管理端前端 - Vite + Vue 3.5 + TypeScript + Element Plus + Pinia",
+  "scripts": {
+    "dev": "vite --port 7077 --host",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --port 4174 --host",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "3.5.25",
+    "vue-router": "4.5.0",
+    "pinia": "2.3.1",
+    "element-plus": "2.8.8",
+    "@element-plus/icons-vue": "2.3.1",
+    "axios": "1.8.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.2.3",
+    "typescript": "5.6.3",
+    "vue-tsc": "2.2.10",
+    "vite": "6.0.11",
+    "@types/node": "22.10.10"
+  }
+}

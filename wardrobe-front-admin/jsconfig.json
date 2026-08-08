@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "paths": {
+      "@/*": [ "./src/*"],
+      "#lib/*": ["./src/lib/*"]
+    },
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "scripthost"
+    ]
+  }
+}

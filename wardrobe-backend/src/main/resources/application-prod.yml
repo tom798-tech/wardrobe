@@ -1,0 +1,86 @@
+server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: native
+
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      initial-size: ${SPRING_DATASOURCE_DRUID_INITIAL_SIZE:10}
+      max-active: ${SPRING_DATASOURCE_DRUID_MAX_ACTIVE:40}
+      min-idle: ${SPRING_DATASOURCE_DRUID_MIN_IDLE:5}
+      max-wait: ${SPRING_DATASOURCE_DRUID_MAX_WAIT:60000}
+      stat:
+        slow-sql-millis: ${SPRING_DATASOURCE_DRUID_SLOW_SQL_MILLIS:1000}
+        log-slow-sql: ${SPRING_DATASOURCE_DRUID_LOG_SLOW_SQL:true}
+        merge-sql: true
+
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST}
+      port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD}
+      database: ${SPRING_REDIS_DATABASE:0}
+      timeout: ${SPRING_REDIS_TIMEOUT:5s}
+
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY}
+      base-url: ${SPRING_AI_OPENAI_BASE_URL}
+    pgvector:
+      store:
+        collection-name: ${SPRING_AI_PGVECTOR_COLLECTION_NAME:clothes_embedding}
+        vector-dimensions: ${SPRING_AI_PGVECTOR_DIMENSIONS:1536}
+        url: ${SPRING_PGVECTOR_URL}
+        username: ${SPRING_PGVECTOR_USERNAME}
+        password: ${SPRING_PGVECTOR_PASSWORD}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:/}
+    connection-timeout: ${SPRING_RABBITMQ_CONNECTION_TIMEOUT:10000}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+sa-token:
+  token-name: ${SA_TOKEN_NAME:token}
+  timeout: ${SA_TOKEN_TIMEOUT:7200}
+  active-timeout: ${SA_TOKEN_ACTIVE_TIMEOUT:1800}
+  is-log: false
+  csrf:
+    is-open: true
+    check-methods: POST,DELETE,PUT,PATCH
+    allow-domains: ${SA_TOKEN_CSRF_ALLOW_DOMAINS}
+    is-check-token: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: wardrobe-backend
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      context:
+        include: true
+  level:
+    druid.sql.Statement: warn

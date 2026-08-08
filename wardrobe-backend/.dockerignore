@@ -1,0 +1,12 @@
+# Docker 构建上下文排除项 (后端 wardrobe-backend)
+# 只保留 pom.xml + src 即可，避免把本地构建产物也拷进去
+target/
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.log
+*.DS_Store
+.mvn/
+HELP.md

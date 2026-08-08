@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+target/
+out/
+build/
+
+# Runtime data
+logs/
+uploads/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.gz
+
+# Temporary files
+tmp/
+temp/

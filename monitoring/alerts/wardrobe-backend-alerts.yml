@@ -1,0 +1,82 @@
+groups:
+  - name: wardrobe-backend.rules
+    rules:
+      - alert: WardrobeBackendDown
+        expr: up{job="wardrobe-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: wardrobe-backend
+        annotations:
+          summary: "Wardrobe backend is down"
+          description: "Prometheus has not been able to scrape wardrobe-backend for more than 1 minute."
+
+      - alert: WardrobeBackendHighErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="wardrobe-backend",status=~"5.."}[5m]))
+            /
+            sum(rate(http_server_requests_seconds_count{job="wardrobe-backend"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: wardrobe-backend
+        annotations:
+          summary: "Wardrobe backend 5xx error rate is high"
+          description: "More than 5% of backend requests have returned 5xx during the last 5 minutes."
+
+      - alert: WardrobeBackendHighAverageLatency
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_sum{job="wardrobe-backend"}[5m]))
+            /
+            sum(rate(http_server_requests_seconds_count{job="wardrobe-backend"}[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: wardrobe-backend
+        annotations:
+          summary: "Wardrobe backend average latency is high"
+          description: "Average HTTP request latency has been above 1 second during the last 5 minutes."
+
+      - alert: WardrobeBackendHeapUsageHigh
+        expr: |
+          (
+            sum(jvm_memory_used_bytes{job="wardrobe-backend",area="heap"})
+            /
+            sum(jvm_memory_max_bytes{job="wardrobe-backend",area="heap"})
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: wardrobe-backend
+        annotations:
+          summary: "Wardrobe backend heap usage is high"
+          description: "JVM heap usage has stayed above 85% for more than 10 minutes."
+
+      - alert: WardrobeBackendCpuUsageHigh
+        expr: process_cpu_usage{job="wardrobe-backend"} > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: wardrobe-backend
+        annotations:
+          summary: "Wardrobe backend CPU usage is high"
+          description: "Process CPU usage has stayed above 80% for more than 10 minutes."
+
+      - alert: WardrobeBackendJdbcPoolNearFull
+        expr: |
+          (
+            hikaricp_connections_active{job="wardrobe-backend"}
+            /
+            hikaricp_connections_max{job="wardrobe-backend"}
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: wardrobe-backend
+        annotations:
+          summary: "Wardrobe backend JDBC pool is near full"
+          description: "Active JDBC connections have exceeded 80% of the configured pool size for more than 5 minutes."

@@ -1,0 +1,32 @@
+:root {
+  --admin-bg: #f2f3f5;
+  --admin-primary: #4682B4;
+}
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: var(--admin-bg);
+  color: #303133;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* 让 el-container 占满整屏 */
+.app-container,
+.app-container > .el-container {
+  height: 100%;
+}
+
+/* 通用表格-按钮小圆形 */
+.btn-icon-circle {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+}

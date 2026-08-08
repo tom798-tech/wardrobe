@@ -1,0 +1,31 @@
+/* 全局样式 (Vite 环境下 main.ts 直接引入) */
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+               "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #303133;
+  background: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+.page-title {
+  font-size: 22px; font-weight: 600; margin: 0 0 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-clothes {
+  transition: transform .2s ease, box-shadow .2s ease;
+  border-radius: 8px; overflow: hidden;
+}
+.card-clothes:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+}
+.clothes-cover {
+  width: 100%; aspect-ratio: 1 / 1; object-fit: cover;
+  background: #fafafa;
+}
+.empty-state { text-align: center; padding: 48px 0; color: #909399; }

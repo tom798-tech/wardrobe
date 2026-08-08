@@ -1,0 +1,12 @@
+{
+  "name": "mock-embedding",
+  "version": "1.0.0",
+  "description": "Mock Embedding API for Spring AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
