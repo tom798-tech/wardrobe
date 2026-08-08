@@ -117,8 +117,8 @@ import request from '@/axios'
 
 const loading = ref(false)
 const searchKeyword = ref('')
-const typeId = ref<number | ''>('')
-const brandId = ref<number | ''>('')
+const typeId = ref<number | '' | null | undefined>('')
+const brandId = ref<number | '' | null | undefined>('')
 const page = ref(1)
 const pageSize = ref(12)
 const rawList = ref<Clothes[]>([])
@@ -165,6 +165,10 @@ function resolveBrandNameForVector(c: VectorSearchResult) {
   return brandList.value.find(b => b.id === c.brandId)?.brandName ?? '无品牌'
 }
 
+function normalizeSelectId(value: number | '' | null | undefined) {
+  return typeof value === 'number' ? value : null
+}
+
 async function loadDicts() {
   try {
     const [t, b] = await Promise.all([request.get('/type'), request.get('/brand')])
@@ -188,18 +192,26 @@ async function resetToAll() {
 }
 function handleTypeFilter() {
   page.value = 1
-  if (typeId.value === '') return resetToAll()
+  const selectedTypeId = normalizeSelectId(typeId.value)
+  if (selectedTypeId === null) {
+    typeId.value = ''
+    return resetToAll()
+  }
   loading.value = true
-  request.get(`/clothes/type/${typeId.value}`)
+  request.get(`/clothes/type/${selectedTypeId}`)
     .then(res => { rawList.value = (Array.isArray(res) ? res : []) as Clothes[] })
     .catch(() => { rawList.value = [] })
     .finally(() => { loading.value = false })
 }
 function handleBrandFilter() {
   page.value = 1
-  if (brandId.value === '') return resetToAll()
+  const selectedBrandId = normalizeSelectId(brandId.value)
+  if (selectedBrandId === null) {
+    brandId.value = ''
+    return resetToAll()
+  }
   loading.value = true
-  request.get(`/clothes/brand/${brandId.value}`)
+  request.get(`/clothes/brand/${selectedBrandId}`)
     .then(res => { rawList.value = (Array.isArray(res) ? res : []) as Clothes[] })
     .catch(() => { rawList.value = [] })
     .finally(() => { loading.value = false })
