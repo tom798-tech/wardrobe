@@ -20,10 +20,10 @@ COPY package.json ./
 COPY yarn.lock* package-lock.json* ./
 RUN --mount=type=cache,target=/usr/local/share/.cache/yarn/v6 \
     --mount=type=cache,target=/root/.npm \
-    if [ -f yarn.lock ]; then \
-      yarn install --frozen-lockfile --non-interactive --network-timeout 600000 2>/dev/null || yarn install --non-interactive --network-timeout 600000; \
-    elif [ -f package-lock.json ]; then \
+    if [ -f package-lock.json ]; then \
       npm ci --no-audit --no-fund --loglevel=error || npm install --no-audit --no-fund --loglevel=error; \
+    elif [ -f yarn.lock ]; then \
+      yarn install --frozen-lockfile --non-interactive --network-timeout 600000 2>/dev/null || yarn install --non-interactive --network-timeout 600000; \
     else \
       npm install --no-audit --no-fund --loglevel=error; \
     fi
@@ -33,7 +33,9 @@ COPY index.html ./
 COPY public ./public
 COPY src    ./src
 COPY vite.config.ts tsconfig.json tsconfig.node.json tsconfig.app.json* ./
-RUN if [ -f yarn.lock ]; then \
+RUN if [ -f package-lock.json ]; then \
+      NODE_OPTIONS="--max-old-space-size=4096" npm run build; \
+    elif [ -f yarn.lock ]; then \
       NODE_OPTIONS="--max-old-space-size=4096" yarn build; \
     else \
       NODE_OPTIONS="--max-old-space-size=4096" npm run build; \
