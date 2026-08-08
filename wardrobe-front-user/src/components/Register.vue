@@ -46,6 +46,11 @@ const loading = ref(false)
 const agree = ref(false)
 const form = reactive({ userName: '', email: '', phone: '', password: '', confirm: '' })
 
+type RegisterResponse = string | {
+  success?: boolean
+  message?: string
+}
+
 const rules: FormRules = {
   userName: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -89,16 +94,19 @@ async function onSubmit() {
       phone: form.phone.trim(),
       password: form.password,
     }
-    const res = await request.post('/register', payload)
-    const text = String(res ?? '')
-    if (!text.includes('成功')) {
-      ElMessage.error(text || '注册失败')
+    const res = await request.post('/register', payload) as RegisterResponse
+    const success = typeof res === 'object' ? res.success === true : String(res ?? '').includes('成功')
+    const message = typeof res === 'object' ? res.message : String(res ?? '')
+    if (!success) {
+      ElMessage.error(message || '注册失败')
       return
     }
     ElMessage.success('注册成功，请登录！')
     router.replace({ name: 'Login' })
-  } catch {
-    ElMessage.error('注册失败，请稍后再试')
+  } catch (error) {
+    const responseMessage = (error as { response?: { data?: { message?: string } }, message?: string })
+      ?.response?.data?.message
+    ElMessage.error(responseMessage || '注册失败，请稍后再试')
   } finally {
     loading.value = false
   }
