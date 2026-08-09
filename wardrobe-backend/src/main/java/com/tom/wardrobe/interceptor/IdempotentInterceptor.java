@@ -74,9 +74,10 @@ public class IdempotentInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 检查 Token 是否已使用（使用 Lua 脚本原子性检查并标记）
+        // 检查 Token 是否已使用（使用 Lua 脚本原子性检查并删除）
+        // Token 是高熵随机值，存在即可代表未使用；删除成功后同一 Token 不能再次提交。
         String luaScript =
-                "if redis.call('get', KEYS[1]) == ARGV[1] then\n" +
+                "if redis.call('exists', KEYS[1]) == 1 then\n" +
                 "    redis.call('del', KEYS[1])\n" +
                 "    return 1\n" +
                 "end\n" +
@@ -84,7 +85,7 @@ public class IdempotentInterceptor implements HandlerInterceptor {
 
         Object result = redisUtils.executeLua(luaScript,
                 new String[]{tokenKey},
-                new String[]{tokenValue.toString()});
+                new String[]{});
 
         if (result == null || !"1".equals(result.toString())) {
             // Token 已被使用
