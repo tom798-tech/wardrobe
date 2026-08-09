@@ -125,6 +125,31 @@ class OrderMessageConsumerTest {
     }
 
     @Test
+    void sameClothDifferentSizesAreCheckedAgainstTotalStock() throws Exception {
+        Message message = message("100", 56L);
+        Order order = order(100, 0, """
+                [
+                  {"clothId":1,"clothSize":"S","amount":6},
+                  {"clothId":1,"clothSize":"M","amount":4}
+                ]
+                """);
+        Clothes clothes = new Clothes();
+        clothes.setId(1);
+        clothes.setStock(9);
+
+        when(orderMapper.selectById(100L)).thenReturn(order);
+        when(clothesMapper.selectById(1)).thenReturn(clothes);
+
+        consumer.handleOrderCreate("100", message, channel);
+
+        assertEquals(9, clothes.getStock());
+        assertEquals(-1, order.getStatus());
+        verify(clothesMapper, never()).updateById(any(Clothes.class));
+        verify(orderMapper).updateById(order);
+        verify(channel).basicAck(56L, false);
+    }
+
+    @Test
     void processedOrderIsAckedWithoutDuplicateStockDeduction() throws Exception {
         Message message = message("100", 66L);
         when(orderMapper.selectById(100L)).thenReturn(order(100, 1, "[]"));

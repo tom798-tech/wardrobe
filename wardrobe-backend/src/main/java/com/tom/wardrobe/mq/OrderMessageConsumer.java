@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,17 +69,20 @@ public class OrderMessageConsumer {
             );
             log.info("订单详情解析完成，orderId: {}, itemCount: {}", orderId, orderItems.size());
 
-            for (OrderItem item : orderItems) {
-                Clothes clothes = clothesMapper.selectById(item.getClothId());
+            Map<Integer, Integer> stockAmounts = aggregateStockAmounts(orderItems);
+            for (Map.Entry<Integer, Integer> entry : stockAmounts.entrySet()) {
+                Integer clothId = entry.getKey();
+                Integer amount = entry.getValue();
+                Clothes clothes = clothesMapper.selectById(clothId);
                 if (clothes == null) {
-                    log.warn("商品不存在，clothId: {}", item.getClothId());
+                    log.warn("商品不存在，clothId: {}", clothId);
                     continue;
                 }
 
-                int newStock = clothes.getStock() - item.getAmount();
+                int newStock = clothes.getStock() - amount;
                 if (newStock < 0) {
                     log.error("数据库库存不足，orderId: {}, clothId: {}, stock: {}, amount: {}",
-                            orderId, item.getClothId(), clothes.getStock(), item.getAmount());
+                            orderId, clothId, clothes.getStock(), amount);
                     order.setStatus(-1);
                     orderMapper.updateById(order);
                     channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
@@ -87,7 +91,7 @@ public class OrderMessageConsumer {
 
                 clothes.setStock(newStock);
                 clothesMapper.updateById(clothes);
-                log.info("数据库库存扣减成功，clothId: {}, remainStock: {}", item.getClothId(), newStock);
+                log.info("数据库库存扣减成功，clothId: {}, remainStock: {}", clothId, newStock);
             }
             evictClothesCache();
 
@@ -186,5 +190,16 @@ public class OrderMessageConsumer {
         if (cache != null) {
             cache.clear();
         }
+    }
+
+    private Map<Integer, Integer> aggregateStockAmounts(List<OrderItem> orderItems) {
+        Map<Integer, Integer> amounts = new LinkedHashMap<>();
+        for (OrderItem item : orderItems) {
+            if (item.getClothId() == null || item.getAmount() == null || item.getAmount() <= 0) {
+                throw new IllegalArgumentException("订单商品信息不完整！");
+            }
+            amounts.merge(item.getClothId(), item.getAmount(), Integer::sum);
+        }
+        return amounts;
     }
 }

@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -78,17 +80,9 @@ public class OrderService {
             }
 
             orderItems = parseOrderItems(order);
-            Integer[] clothIds = new Integer[orderItems.size()];
-            int[] amounts = new int[orderItems.size()];
-
-            for (int i = 0; i < orderItems.size(); i++) {
-                OrderItem item = orderItems.get(i);
-                if (item.getClothId() == null || item.getAmount() == null || item.getAmount() <= 0) {
-                    return "订单商品信息不完整！";
-                }
-                clothIds[i] = item.getClothId();
-                amounts[i] = item.getAmount();
-            }
+            Map<Integer, Integer> stockAmounts = aggregateStockAmounts(orderItems);
+            Integer[] clothIds = stockAmounts.keySet().toArray(new Integer[0]);
+            int[] amounts = stockAmounts.values().stream().mapToInt(Integer::intValue).toArray();
 
             stockDeducted = stockService.deductStockBatch(clothIds, amounts);
             if (!stockDeducted) {
@@ -207,8 +201,17 @@ public class OrderService {
     }
 
     private void rollbackStock(List<OrderItem> orderItems) {
+        aggregateStockAmounts(orderItems).forEach(stockService::rollbackStock);
+    }
+
+    private Map<Integer, Integer> aggregateStockAmounts(List<OrderItem> orderItems) {
+        Map<Integer, Integer> amounts = new LinkedHashMap<>();
         for (OrderItem item : orderItems) {
-            stockService.rollbackStock(item.getClothId(), item.getAmount());
+            if (item.getClothId() == null || item.getAmount() == null || item.getAmount() <= 0) {
+                throw new IllegalArgumentException("订单商品信息不完整！");
+            }
+            amounts.merge(item.getClothId(), item.getAmount(), Integer::sum);
         }
+        return amounts;
     }
 }

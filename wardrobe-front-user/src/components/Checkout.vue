@@ -149,11 +149,15 @@ async function submitOrder() {
       address: `${form.consignee}  ${form.phone}  ${form.address}`,
       time: new Date().toLocaleString('zh-CN', { hour12: false }),
     }
-    await request.post('/order', payload, {
+    const result = await request.post('/order', payload, {
       headers: {
         'X-Idempotent-Token': idempotentToken,
       },
-    })
+    }) as string
+    if (typeof result === 'string' && !result.includes('成功')) {
+      ElMessage.error(result || '订单提交失败')
+      return
+    }
     ElMessage.success('订单提交成功')
     for (const g of items.value) try { await request.delete(`/cart/${g.id}`) } catch { /* ignore */ }
     await userStore.refreshCartCount()
