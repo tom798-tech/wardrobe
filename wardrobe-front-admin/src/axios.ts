@@ -12,7 +12,10 @@ service.interceptors.request.use(
     if (raw) {
       try {
         const u = JSON.parse(raw) as { token?: string }
-        if (u?.token) config.headers.Authorization = `Bearer ${u.token}`
+        if (u?.token) {
+          config.headers.token = u.token
+          config.headers.Authorization = `Bearer ${u.token}`
+        }
       } catch { /* ignore */ }
     }
     return config
@@ -29,6 +32,7 @@ service.interceptors.response.use(
   (err) => {
     const msg =
       err?.response?.status === 401 ? '登录已过期，请重新登录' :
+      err?.response?.status === 403 ? (err?.response?.data?.message ?? '没有管理员权限') :
       err?.code === 'ECONNABORTED' ? '请求超时，请检查网络' :
       typeof err?.response?.data === 'string' ? err.response.data :
       (err?.message ?? '请求失败')
