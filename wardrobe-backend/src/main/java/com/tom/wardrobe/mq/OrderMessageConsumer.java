@@ -179,6 +179,9 @@ public class OrderMessageConsumer {
     }
 
     private void evictClothesCache() {
+        if (cacheManager == null) {
+            return;
+        }
         Cache cache = cacheManager.getCache("clothes");
         if (cache != null) {
             cache.clear();
