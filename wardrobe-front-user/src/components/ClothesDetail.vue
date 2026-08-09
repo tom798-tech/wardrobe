@@ -160,7 +160,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChatDotRound, Coin, Edit, Link, ShoppingCart, Star } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { Brand, Clothes, Review, Size, Type, User, VectorSearchResult } from '@/types'
+import type { Brand, Clothes, Review, Size, Type, VectorSearchResult } from '@/types'
 import request from '@/axios'
 import { useUserStore } from '@/store/userStore'
 
@@ -174,7 +174,6 @@ const clothes = ref<Clothes | null>(null)
 const reviews = ref<Review[]>([])
 const brandMap = ref<Record<number, Brand>>({})
 const typeMap = ref<Record<number, Type>>({})
-const userMap = ref<Record<number, User>>({})
 const cover = ref('')
 const subImages = ref<string[]>([])
 const selectedSize = ref('')
@@ -232,7 +231,7 @@ function resolveInitial(r: Review) {
   return name.charAt(0).toUpperCase() || 'U'
 }
 function resolveUser(r: Review) {
-  return r.userName ?? userMap.value[r.userId ?? 0]?.userName ?? '匿名用户'
+  return r.userName ?? '匿名用户'
 }
 
 async function loadDicts() {
@@ -277,11 +276,6 @@ async function loadReviews() {
   try {
     const list = (await request.get(`/review/cloth/${id}`)) as Review[]
     reviews.value = list
-    const userIds = Array.from(new Set(list.map(r => r.userId).filter(Boolean) as number[]))
-    if (userIds.length) {
-      const users = (await request.get('/user', { params: { queryStr: '' } })) as User[]
-      users.forEach(u => { userMap.value[u.id] = u })
-    }
   } catch {
     reviews.value = []
   }
