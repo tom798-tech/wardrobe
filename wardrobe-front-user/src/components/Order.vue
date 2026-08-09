@@ -57,7 +57,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Check, List, Wallet } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { Order } from '@/types'
+import type { Clothes, Order } from '@/types'
 import request from '@/axios'
 import { useUserStore } from '@/store/userStore'
 
@@ -65,8 +65,18 @@ const userStore = useUserStore()
 const loading = ref(false)
 const allList = ref<Order[]>([])
 const activeStatus = ref<string>('')
+const clothesMap = ref<Record<number, Clothes>>({})
 
-interface OrderItemView { clothName: string; clothSize?: string; price?: number; amount?: number; cover?: string }
+interface OrderItemView {
+  clothId?: number
+  clothName: string
+  clothSize?: string
+  price?: number
+  amount?: number
+  cover?: string
+  image?: string
+  images?: string
+}
 
 const list = computed(() => {
   if (activeStatus.value === '') return allList.value
@@ -103,16 +113,36 @@ function parseItems(o: Order): OrderItemView[] {
   }
 }
 function resolveCover(g: OrderItemView) {
-  const url = g.cover ?? ''
+  const clothes = g.clothId ? clothesMap.value[g.clothId] : undefined
+  const url = g.cover
+    ?? g.image
+    ?? g.images?.split(';')[0]
+    ?? clothes?.image
+    ?? clothes?.images?.split(';')[0]
+    ?? ''
   if (!url) return 'https://placehold.co/120x120/f5f7fa/909399?text=No+Image'
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
   return `/api/images/${url}`
+}
+
+async function loadClothesMap() {
+  try {
+    const clothesList = (await request.get('/clothes')) as Clothes[]
+    clothesMap.value = Object.fromEntries(
+      (Array.isArray(clothesList) ? clothesList : []).map(c => [c.id, c]),
+    )
+  } catch {
+    clothesMap.value = {}
+  }
 }
 
 async function refresh() {
   if (!userStore.user) { allList.value = []; return }
   loading.value = true
   try {
+    if (!Object.keys(clothesMap.value).length) {
+      await loadClothesMap()
+    }
     allList.value = (await request.get('/order')) as Order[]
     allList.value.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
   } catch {

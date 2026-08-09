@@ -133,6 +133,11 @@ async function submitOrder() {
       clothId: g.clothId,
       clothName: (g.clothes as Clothes | undefined)?.clothName ?? '商品',
       clothSize: g.clothSize,
+      cover: (g.clothes as Clothes | undefined)?.image
+        ?? (g.clothes as Clothes | undefined)?.images?.split(';')[0]
+        ?? '',
+      image: (g.clothes as Clothes | undefined)?.image ?? '',
+      images: (g.clothes as Clothes | undefined)?.images ?? '',
       price: (g.clothes as Clothes | undefined)?.price ?? 0,
       amount: g.amount,
     })))
