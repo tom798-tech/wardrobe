@@ -89,10 +89,8 @@ async function handleLogout() {
   } catch {
     return
   }
-  try {
-    await request.post('/logout')
-  } catch { /* ignore */ }
   userStore.logout()
+  cartCount.value = 0
   ElMessage.success('已退出登录')
   router.push({ name: 'Home' })
 }
