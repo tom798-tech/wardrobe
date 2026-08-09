@@ -294,12 +294,16 @@ function ensureLogin() {
 async function addToCart() {
   if (!ensureLogin() || !clothes.value) return
   try {
-    await request.post('/cart', {
+    const res = await request.post('/cart', {
       userId: userStore.user!.id,
       clothId: clothes.value.id,
       clothSize: selectedSize.value,
       amount: qty.value,
-    })
+    }) as string
+    if (typeof res === 'string' && !res.includes('成功')) {
+      ElMessage.error(res || '添加购物车失败')
+      return
+    }
     ElMessage.success('添加到购物车成功！')
     userStore.refreshCartCount()
   } catch {

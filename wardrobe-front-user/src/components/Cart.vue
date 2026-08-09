@@ -28,7 +28,8 @@
             </div>
             <div class="row-between align-center">
               <span class="price">¥ {{ Number(c.clothes?.price ?? 0).toFixed(2) }}</span>
-              <el-input-number v-model="c.amount" :min="1" :max="c.clothes?.stock ?? 99" size="small" @change="updateItem(c)" />
+              <span class="stock">库存 {{ c.clothes?.stock ?? 0 }}</span>
+              <el-input-number v-model="c.amount" :min="1" size="small" @change="updateItem(c)" />
               <el-button link type="danger" :icon="Delete" @click="removeItem(c)">删除</el-button>
             </div>
           </div>
@@ -100,8 +101,18 @@ async function reload() {
   }
 }
 async function updateItem(c: CartRow) {
-  try { await request.put('/cart', c as Cart) }
-  catch { ElMessage.error('更新失败') }
+  try {
+    const res = await request.put('/cart', c as Cart) as string
+    if (typeof res === 'string' && !res.includes('成功')) {
+      ElMessage.error(res || '更新失败')
+      reload()
+    } else {
+      userStore.refreshCartCount()
+    }
+  } catch {
+    ElMessage.error('更新失败')
+    reload()
+  }
 }
 async function removeItem(c: CartRow) {
   try {
@@ -159,6 +170,7 @@ onMounted(reload)
 .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .align-center { align-items: center; }
 .price { color: var(--el-color-danger); font-weight: 600; font-size: 16px; }
+.stock { color: #909399; font-size: 12px; }
 
 .checkout-bar {
   position: sticky; bottom: 12px;
