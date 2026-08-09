@@ -83,6 +83,10 @@ const form = reactive({
   address: '',
 })
 
+type IdempotentTokenResponse = {
+  token?: string
+}
+
 const qtyCount = computed(() => items.value.reduce((s, x) => s + (x.amount ?? 0), 0))
 const subtotal = computed(() =>
   items.value.reduce((s, x) => s + (Number(x.clothes?.price ?? 0) * Number(x.amount ?? 1)), 0),
@@ -113,10 +117,17 @@ async function loadItems() {
   }
 }
 
+async function fetchIdempotentToken() {
+  const res = (await request.get('/api/idempotent/token', { params: { timeout: 120 } })) as IdempotentTokenResponse
+  if (!res.token) throw new Error('未获取到幂等性 Token')
+  return res.token
+}
+
 async function submitOrder() {
   if (!canSubmit.value || !userStore.user) return
   submitting.value = true
   try {
+    const idempotentToken = await fetchIdempotentToken()
     const itemsText = JSON.stringify(items.value.map(g => ({
       id: g.id,
       clothId: g.clothId,
@@ -133,7 +144,11 @@ async function submitOrder() {
       address: `${form.consignee}  ${form.phone}  ${form.address}`,
       time: new Date().toLocaleString('zh-CN', { hour12: false }),
     }
-    await request.post('/order', payload)
+    await request.post('/order', payload, {
+      headers: {
+        'X-Idempotent-Token': idempotentToken,
+      },
+    })
     ElMessage.success('订单提交成功')
     for (const g of items.value) try { await request.delete(`/cart/${g.id}`) } catch { /* ignore */ }
     await userStore.refreshCartCount()
