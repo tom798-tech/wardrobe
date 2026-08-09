@@ -85,10 +85,10 @@ const pageSize = ref(10)
 const searchUserName = ref('')
 const orderStatus = ref<number | ''>('')
 const statusList = reactive([
-  { id: 0, name: '未支付' },
-  { id: 1, name: '未发货' },
-  { id: 2, name: '已发货' },
-  { id: 3, name: '已收货' },
+  { id: 0, name: '待支付' },
+  { id: 1, name: '待发货' },
+  { id: 2, name: '待收货' },
+  { id: 3, name: '已完成' },
 ])
 
 const filtered = computed<Order[]>(() => {
@@ -110,8 +110,8 @@ const currentPage = computed(() => {
 
 function statusText(s?: number) {
   switch (s) {
-    case 0: return '未支付'; case 1: return '未发货'
-    case 2: return '已发货'; case 3: return '已收货'
+    case 0: return '待支付'; case 1: return '待发货'
+    case 2: return '待收货'; case 3: return '已完成'
     default: return '未知'
   }
 }
@@ -134,7 +134,7 @@ function parseGoods(o: Order): GoodLine[] {
 }
 
 async function load() {
-  const res = await request.get('/order') as Order[]
+  const res = await request.get('/order/all') as Order[]
   tableData.value = Array.isArray(res) ? res : []
 }
 function applyFilter() { page.value = 1 }

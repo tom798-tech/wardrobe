@@ -88,8 +88,8 @@ const stats = computed(() => [
 
 function statusText(s?: number) {
   switch (s) {
-    case 0: return '未支付'; case 1: return '未发货'
-    case 2: return '已发货'; case 3: return '已收货'
+    case 0: return '待支付'; case 1: return '待发货'
+    case 2: return '待收货'; case 3: return '已完成'
     default: return '未知'
   }
 }
@@ -106,7 +106,7 @@ function tagType(s: OrderStatus) {
 async function loadAll() {
   try {
     const [o, c, u, b, r] = (await Promise.all([
-      request.get('/order'),
+      request.get('/order/all'),
       request.get('/clothes'),
       request.get('/user'),
       request.get('/brand'),
