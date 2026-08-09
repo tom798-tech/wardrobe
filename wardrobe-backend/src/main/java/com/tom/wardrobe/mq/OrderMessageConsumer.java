@@ -11,6 +11,8 @@ import com.tom.wardrobe.entity.OrderItem;
 import com.tom.wardrobe.mapper.ClothesMapper;
 import com.tom.wardrobe.mapper.OrderMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -33,6 +35,9 @@ public class OrderMessageConsumer {
 
     @Resource
     private ObjectMapper objectMapper;
+
+    @Resource
+    private CacheManager cacheManager;
 
     private static final int MAX_RETRY_COUNT = 3;
 
@@ -84,6 +89,7 @@ public class OrderMessageConsumer {
                 clothesMapper.updateById(clothes);
                 log.info("数据库库存扣减成功，clothId: {}, remainStock: {}", item.getClothId(), newStock);
             }
+            evictClothesCache();
 
             order.setStatus(1);
             orderMapper.updateById(order);
@@ -170,5 +176,12 @@ public class OrderMessageConsumer {
             }
         }
         return 0;
+    }
+
+    private void evictClothesCache() {
+        Cache cache = cacheManager.getCache("clothes");
+        if (cache != null) {
+            cache.clear();
+        }
     }
 }
