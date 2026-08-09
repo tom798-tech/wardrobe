@@ -35,6 +35,7 @@ export interface Clothes extends IdEntity {
   typeId?: number | null
   style?: string | null
   price?: number
+  stock?: number
   sizeList?: Size[]
 }
 

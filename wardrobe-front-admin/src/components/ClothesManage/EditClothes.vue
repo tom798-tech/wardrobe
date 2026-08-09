@@ -41,6 +41,9 @@
         <el-form-item label="服装价格" prop="price">
           <el-input v-model="formData.price" />
         </el-form-item>
+        <el-form-item label="库存" prop="stock">
+          <el-input-number v-model="formData.stock" :min="0" :precision="0" style="width: 100%" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -84,6 +87,7 @@ const rules: FormRules = {
     { required: true, message: '请输入服装价格', trigger: 'blur' },
     { pattern: /^\d+(\.\d+)?$/, message: '请输入合法的数字', trigger: 'blur' },
   ],
+  stock: [{ required: true, message: '请输入库存', trigger: 'blur' }],
 }
 
 const formData = reactive<Partial<Clothes> & { typeId?: number | null }>({
@@ -93,6 +97,7 @@ const formData = reactive<Partial<Clothes> & { typeId?: number | null }>({
   style: '',
   image: '',
   price: undefined,
+  stock: 0,
 })
 
 const dialogVisible = computed({
@@ -119,6 +124,7 @@ watch(
       formData.style = val.style ?? ''
       formData.image = val.image ?? ''
       formData.price = val.price
+      formData.stock = val.stock ?? 0
       imageUrl.value = val.image ? IMG_BASE + val.image : ''
       newFileName.value = ''
     }
@@ -155,6 +161,7 @@ async function submitForm() {
     typeId: formData.typeId,
     image: imageName.value,
     price: formData.price,
+    stock: formData.stock ?? 0,
   }
   try {
     const res = await request.put('/clothes', payload) as string

@@ -23,6 +23,9 @@ public class ClothesService {
     @Resource
     private SizeMapper sizeMapper;
 
+    @Resource
+    private StockService stockService;
+
     @Cacheable(key = "'all'")
     public List<Clothes> findAll() {
         return clothesMapper.selectList(null);
@@ -68,13 +71,22 @@ public class ClothesService {
 
     @CacheEvict(allEntries = true)
     public String addClothes(Clothes clothes) {
+        if (clothes.getStock() == null) {
+            clothes.setStock(0);
+        }
         int count = clothesMapper.insert(clothes);
+        if (count > 0) {
+            stockService.initStock(clothes.getId(), clothes.getStock());
+        }
         return count > 0 ? "添加成功！" : "添加失败！";
     }
 
     @CacheEvict(allEntries = true)
     public String updateClothes(Clothes clothes) {
         int count = clothesMapper.updateById(clothes);
+        if (count > 0 && clothes.getStock() != null) {
+            stockService.syncStockFromDb(clothes.getId());
+        }
         return count > 0 ? "修改成功！" : "修改失败！";
     }
 

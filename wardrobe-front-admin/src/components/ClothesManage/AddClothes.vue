@@ -61,6 +61,9 @@
         <el-form-item label="服装价格" prop="price">
           <el-input v-model="formData.price" placeholder="请输入价格" />
         </el-form-item>
+        <el-form-item label="初始库存" prop="stock">
+          <el-input-number v-model="formData.stock" :min="0" :precision="0" style="width: 100%" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -101,6 +104,7 @@ const rules: FormRules = {
     { required: true, message: '请输入服装价格', trigger: 'blur' },
     { pattern: /^\d+(\.\d+)?$/, message: '请输入合法的数字', trigger: 'blur' },
   ],
+  stock: [{ required: true, message: '请输入初始库存', trigger: 'blur' }],
 }
 
 const generating = ref(false)
@@ -112,6 +116,7 @@ const formData = reactive<Partial<Clothes> & { typeId?: number | null; brand?: s
   brand: '',
   description: '',
   price: undefined,
+  stock: 0,
 })
 
 const dialogVisible = computed({
@@ -180,6 +185,7 @@ async function submitForm() {
     typeId: formData.typeId,
     image: fileName.value,
     price: formData.price,
+    stock: formData.stock ?? 0,
     brand: formData.brand,
     description: formData.description,
   }
@@ -192,7 +198,7 @@ async function submitForm() {
 
 function handleClose() {
   // 重置状态
-  Object.assign(formData, { clothName: '', typeId: null, style: '', brand: '', description: '', price: undefined })
+  Object.assign(formData, { clothName: '', typeId: null, style: '', brand: '', description: '', price: undefined, stock: 0 })
   imageUrl.value = ''
   fileName.value = ''
   ruleFormRef.value?.clearValidate()

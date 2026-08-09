@@ -74,6 +74,9 @@
         <el-table-column label="价格" width="120" align="center">
           <template #default="{ row }">¥ {{ Number(row.price ?? 0).toFixed(2) }}</template>
         </el-table-column>
+        <el-table-column label="库存" width="100" align="center">
+          <template #default="{ row }">{{ row.stock ?? 0 }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" :icon="Edit" circle @click="openEdit(row)" />
