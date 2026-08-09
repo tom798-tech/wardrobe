@@ -53,7 +53,7 @@ INSERT INTO `t_clothes` VALUES (10, '运动鞋', '20240723140210_ydx.jpg\r\n', 3
 DROP TABLE IF EXISTS `t_order`;
 CREATE TABLE `t_order`  (
   `id` int(0) NOT NULL AUTO_INCREMENT COMMENT '订单编号',
-  `clothes_details` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '服装详细信息',
+  `clothes_details` text CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '服装详细信息',
   `price` decimal(10, 2) NULL DEFAULT NULL COMMENT '服装详细信息',
   `status` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '订单价格',
   `user_id` int(0) NULL DEFAULT NULL COMMENT '订单状态（未支付：0、未发货：1、已发货：2、已收货：3）',
